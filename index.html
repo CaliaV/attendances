@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Student Attendance System</title>
+    <style>
+        /* CSS Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            padding: 15px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #333;
+            font-size: 24px;
+        }
+
+        /* Form Styles */
+        .form-section {
+            background-color: #f9f9f9;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .form-section h2 {
+            margin-bottom: 12px;
+            font-size: 18px;
+            color: #444;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .form-row > * {
+                width: 100%;
+            }
+        }
+
+        input, select, button {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input, select {
+            flex: 1;
+            min-width: 0; /* Prevents flex items from overflowing */
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #fff;
+            transition: all 0.2s;
+            white-space: nowrap; /* Prevents button text from wrapping */
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.add-section {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        button.add-student {
+            background-color: #22c55e;
+            color: white;
+        }
+
+        /* Folder/Section Styles */
+        .section {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f9fafb;
+            padding: 12px 16px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 500px) {
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+
+        .section-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .section-content {
+            padding: 16px;
+            display: none;
+            overflow-x: auto; /* Allow horizontal scrolling on small screens */
+        }
+
+        .section.expanded .section-content {
+            display: block;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px; /* Minimum width to ensure readability */
+        }
+
+        th {
+            text-align: left;
+            padding: 10px;
+            background-color: #f9fafb;
+            font-weight: 500;
+        }
+
+        th:not(:first-child) {
+            text-align: center;
+        }
+
+        td {
+            padding: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        td:not(:first-child) {
+            text-align: center;
+        }
+
+        .student-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Status Menu */
+        .status-cell {
+            position: relative;
+        }
+
+        .status-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e5e7eb;
+            border: none;
+            cursor: pointer;
+        }
+
+        .status-menu {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+            display: none;
+            width: 120px;
+        }
+
+        /* For mobile - adjust status menu position */
+        @media (max-width: 768px) {
+            .status-menu {
+                left: 0;
+                transform: none;
+            }
+        }
+
+        .status-menu.active {
+            display: block;
+        }
+
+        .status-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        /* Status Colors */
+        .status-present {
+            background-color: #22c55e;
+            color: white;
+        }
+
+        .status-absent {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .status-late {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .status-drop {
+            background-color: #6b7280;
+            color: white;
+        }
+
+        .read-btn {
+            color: #3b82f6;
+            background-color: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+        }
+
+        .read-btn:hover {
+            color: #2563eb;
+        }
+
+        .delete-btn {
+            color: #ef4444;
+            background-color: transparent;
+            border: none;
+        }
+
+        .delete-btn:hover {
+            color: #dc2626;
+        }
+
+        .highlighted {
+            background-color: #e0f2fe;
+        }
+
+        .no-students {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            padding: 16px;
+        }
+
+        /* Reading indicator */
+        .reading-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 100;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 22px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .form-section {
+                padding: 12px;
+            }
+            
+            .section-content {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Attendance System</h1>
+        
+        <!-- Add Section Form -->
+        <div class="form-section">
+            <h2>Add New Section</h2>
+            <div class="form-row">
+                <input type="text" id="new-section-name" placeholder="Enter section name">
+                <button class="add-section" id="add-section-btn">Add Section</button>
+            </div>
+        </div>
+        
+        <!-- Add Student Form -->
+        <div class="form-section">
+            <h2>Add New Student</h2>
+            <div class="form-row">
+                <select id="section-select">
+                    <option value="">Select Section</option>
+                </select>
+                <input type="text" id="new-student-name" placeholder="Enter student name">
+                <button class="add-student" id="add-student-btn">Add Student</button>
+            </div>
+        </div>
+        
+        <!-- Sections List -->
+        <div id="sections-container"></div>
+    </div>
+
+    <!-- Reading indicator -->
+    <div id="reading-indicator" class="reading-indicator">
+        Reading attendance data...
+    </div>
+
+    <script>
+        // Initial Data
+        const ATTENDANCE_TYPES = {
+            NONE: 'none',
+            PRESENT: 'present',
+            ABSENT: 'absent',
+            LATE: 'late',
+            DROP: 'drop'
+        };
+
+        // Function to create empty attendance object
+        function createEmptyAttendance() {
+            return {
+                week1: ATTENDANCE_TYPES.NONE,
+                week2: ATTENDANCE_TYPES.NONE,
+                week3: ATTENDANCE_TYPES.NONE,
+                week4: ATTENDANCE_TYPES.NONE
+            };
+        }
+
+        let sections = [
+            {
+                id: 1,
+                name: 'Section A',
+                expanded: false,
+                students: [
+                    { id: 1, name: 'John Smith', attendance: createEmptyAttendance() },
+                    { id: 2, name: 'Emily Johnson', attendance: createEmptyAttendance() },
+                    { id: 3, name: 'Michael Williams', attendance: createEmptyAttendance() },
+                    { id: 4, name: 'Sarah Brown', attendance: createEmptyAttendance() },
+                ]
+            },
+            {
+                id: 2,
+                name: 'Section B',
+                expanded: false,
+                students: [
+                    { id: 5, name: 'David Jones', attendance: createEmptyAttendance() },
+                    { id: 6, name: 'Jessica Davis', attendance: createEmptyAttendance() },
+                    { id: 7, name: 'Daniel Miller', attendance: createEmptyAttendance() },
+                    { id: 8, name: 'Olivia Wilson', attendance: createEmptyAttendance() },
+                ]
+            },
+            {
+                id: 3,
+                name: 'Section C',
+                expanded: false,
+                students: [
+                    { id: 9, name: 'James Taylor', attendance: createEmptyAttendance() },
+                    { id: 10, name: 'Sophia Martinez', attendance: createEmptyAttendance() },
+                    { id: 11, name: 'Benjamin Anderson', attendance: createEmptyAttendance() },
+                    { id: 12, name: 'Emma Thomas', attendance: createEmptyAttendance() },
+                ]
+            }
+        ];
+
+        // Voice reading state
+        let isReading = false;
+        let selectedStudent = null;
+        
+        // Track currently open status menu
+        let activeStatusMenu = null;
+
+        // DOM Elements
+        const sectionsContainer = document.getElementById('sections-container');
+        const sectionSelect = document.getElementById('section-select');
+        const newSectionNameInput = document.getElementById('new-section-name');
+        const newStudentNameInput = document.getElementById('new-student-name');
+        const addSectionBtn = document.getElementById('add-section-btn');
+        const addStudentBtn = document.getElementById('add-student-btn');
+        const readingIndicator = document.getElementById('reading-indicator');
+
+        // Initialize
+        function init() {
+            renderSections();
+            updateSectionSelect();
+            setupEventListeners();
+            
+            // Close status menu on click outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.status-cell') && activeStatusMenu) {
+                    closeStatusMenu();
+                }
+            });
+            
+            // Load data from localStorage if available
+            loadData();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('attendanceSystemData', JSON.stringify(sections));
+        }
+
+        // Load data from localStorage
+        function loadData() {
+            const savedData = localStorage.getItem('attendanceSystemData');
+            if (savedData) {
+                try {
+                    sections = JSON.parse(savedData);
+                    renderSections();
+                    updateSectionSelect();
+                } catch (e) {
+                    console.error('Error loading saved data', e);
+                }
+            }
+        }
+
+        // Get status display
+        function getStatusDisplay(status) {
+            switch(status) {
+                case ATTENDANCE_TYPES.PRESENT:
+                    return { icon: '✓', class: 'status-present' };
+                case ATTENDANCE_TYPES.ABSENT:
+                    return { icon: '✗', class: 'status-absent' };
+                case ATTENDANCE_TYPES.LATE:
+                    return { icon: '⏱', class: 'status-late' };
+                case ATTENDANCE_TYPES.DROP:
+                    return { icon: '⊘', class: 'status-drop' };
+                default:
+                    return { icon: '?', class: '' };
+            }
+        }
+
+        // Format status for speech
+        function formatStatusForSpeech(status) {
+            switch(status) {
+                case ATTENDANCE_TYPES.PRESENT:
+                    return "Present";
+                case ATTENDANCE_TYPES.ABSENT:
+                    return "Absent";
+                case ATTENDANCE_TYPES.LATE:
+                    return "Late";
+                case ATTENDANCE_TYPES.DROP:
+                    return "Dropped";
+                default:
+                    return "Not recorded";
+            }
+        }
+
+        // Open status menu
+        function openStatusMenu(menuElement) {
+            // Close existing menu if any
+            closeStatusMenu();
+            
+            menuElement.classList.add('active');
+            activeStatusMenu = menuElement;
+        }
+
+        // Close status menu
+        function closeStatusMenu() {
+            if (activeStatusMenu) {
+                activeStatusMenu.classList.remove('active');
+                activeStatusMenu = null;
+            }
+        }
+
+        // Render sections
+        function renderSections() {
+            if (sections.length === 0) {
+                sectionsContainer.innerHTML = `
+                    <div class="empty-state">
+                        No sections added yet. Create a section to get started.
+                    </div>
+                `;
+                return;
+            }
+            
+            sectionsContainer.innerHTML = '';
+            
+            sections.forEach(section => {
+                const sectionElement = document.createElement('div');
+                sectionElement.className = `section ${section.expanded ? 'expanded' : ''}`;
+                sectionElement.dataset.id = section.id;
+                
+                // Section header
+                const headerHTML = `
+                    <div class="section-header">
+                        <div class="section-name">
+                            <span class="icon">📁</span>
+                            <button class="toggle-btn" data-id="${section.id}">
+                                <span class="icon">${section.expanded ? '▼' : '▶'}</span>
+                                ${section.name}
+                            </button>
+                        </div>
+                        <div class="section-actions">
+                            <button class="delete-btn" data-id="${section.id}">
+                                <span class="icon">❌</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Section content
+                let contentHTML = `<div class="section-content">`;
+                
+                if (section.students.length > 0) {
+                    contentHTML += `
+                        <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Week 1</th>
+                                    <th>Week 2</th>
+                                    <th>Week 3</th>
+                                    <th>Week 4</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    section.students.forEach(student => {
+                        const isHighlighted = selectedStudent && selectedStudent.id === student.id;
+                        
+                        contentHTML += `
+                            <tr data-id="${student.id}" class="${isHighlighted ? 'highlighted' : ''}">
+                                <td>
+                                    <div class="student-name">
+                                        <span class="icon">👤</span>
+                                        ${student.name}
+                                        <button class="read-btn" 
+                                                data-section="${section.id}" 
+                                                data-student="${student.id}"
+                                                aria-label="Read attendance for ${student.name}">
+                                            <span class="icon">🔊</span>
+                                        </button>
+                                    </div>
+                                </td>`;
+                        
+                        // Weeks cells
+                        ['week1', 'week2', 'week3', 'week4'].forEach(week => {
+                            const status = student.attendance[week];
+                            const statusDisplay = getStatusDisplay(status);
+                            
+                            contentHTML += `
+                                <td class="status-cell">
+                                    <button class="status-btn ${statusDisplay.class}" 
+                                            data-section="${section.id}" 
+                                            data-student="${student.id}" 
+                                            data-week="${week}"
+                                            aria-label="Set attendance status for ${student.name} in ${week.replace('week', 'Week ')}">
+                                        ${statusDisplay.icon}
+                                    </button>
+                                    <div class="status-menu" id="menu-${section.id}-${student.id}-${week}">
+                                        <div class="status-option" data-status="${ATTENDANCE_TYPES.PRESENT}">
+                                            <span class="icon status-present">✓</span> Present
+                                        </div>
+                                        <div class="status-option" data-status="${ATTENDANCE_TYPES.ABSENT}">
+                                            <span class="icon status-absent">✗</span> Absent
+                                        </div>
+                                        <div class="status-option" data-status="${ATTENDANCE_TYPES.LATE}">
+                                            <span class="icon status-late">⏱</span> Late
+                                        </div>
+                                        <div class="status-option" data-status="${ATTENDANCE_TYPES.DROP}">
+                                            <span class="icon status-drop">⊘</span> Drop
+                                        </div>
+                                        <div class="status-option" data-status="${ATTENDANCE_TYPES.NONE}">
+                                            <span class="icon">?</span> None
+                                        </div>
+                                    </div>
+                                </td>`;
+                        });
+                        
+                        contentHTML += `
+                                <td>
+                                    <button class="delete-btn" 
+                                            data-section="${section.id}" 
+                                            data-student="${student.id}"
+                                            aria-label="Delete ${student.name}">❌</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    contentHTML += `
+                            </tbody>
+                        </table>
+                        </div>
+                    `;
+                } else {
+                    contentHTML += `<p class="no-students">No students in this section</p>`;
+                }
+                
+                contentHTML += `</div>`;
+                
+                sectionElement.innerHTML = headerHTML + contentHTML;
+                sectionsContainer.appendChild(sectionElement);
+            });
+            
+            // Attach event listeners
+            attachSectionEventListeners();
+        }
+
+        // Update section select dropdown
+        function updateSectionSelect() {
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section.id;
+                option.textContent = section.name;
+                sectionSelect.appendChild(option);
+            });
+        }
+
+        // Setup global event listeners
+        function setupEventListeners() {
+            // Add section
+            addSectionBtn.addEventListener('click', () => {
+                addNewSection();
+            });
+            
+            // Add section on Enter key press
+            newSectionNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addNewSection();
+                }
+            });
+            
+            // Add student
+            addStudentBtn.addEventListener('click', () => {
+                addNewStudent();
+            });
+            
+            // Add student on Enter key press
+            newStudentNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addNewStudent();
+                }
+            });
+        }
+
+        // Add new section
+        function addNewSection() {
+            const name = newSectionNameInput.value.trim();
+            if (name === '') return;
+            
+            const newSection = {
+                id: Date.now(),
+                name: name,
+                expanded: true, // Automatically expand new sections
+                students: []
+            };
+            
+            sections.push(newSection);
+            newSectionNameInput.value = '';
+            
+            saveData();
+            renderSections();
+            updateSectionSelect();
+        }
+
+        // Add new student
+        function addNewStudent() {
+            const sectionId = parseInt(sectionSelect.value);
+            const name = newStudentNameInput.value.trim();
+            
+            if (isNaN(sectionId) || name === '') return;
+            
+            const newStudent = {
+                id: Date.now(),
+                name: name,
+                attendance: createEmptyAttendance()
+            };
+            
+            sections = sections.map(section => {
+                if (section.id === sectionId) {
+                    return { ...section, students: [...section.students, newStudent], expanded: true };
+                }
+                return section;
+            });
+            
+            newStudentNameInput.value = '';
+            saveData();
+            renderSections();
+        }
+
+        // Attach event listeners to section elements
+        function attachSectionEventListeners() {
+            // Toggle section
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sectionId = parseInt(btn.dataset.id);
+                    sections = sections.map(section => {
+                        if (section.id === sectionId) {
+                            return { ...section, expanded: !section.expanded };
+                        }
+                        return section;
+                    });
+                    renderSections();
+                });
+            });
+            
+            // Delete section
+            document.querySelectorAll('.section-header .delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sectionId = parseInt(btn.dataset.id);
+                    
+                    if (confirm('Are you sure you want to delete this section and all its students?')) {
+                        sections = sections.filter(section => section.id !== sectionId);
+                        saveData();
+                        renderSections();
+                        updateSectionSelect();
+                    }
+                });
+            });
+            
+            // Read student attendance
+            document.querySelectorAll('.read-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (isReading) {
+                        window.speechSynthesis.cancel(); // Stop any ongoing speech
+                        isReading = false;
+                        readingIndicator.style.display = 'none';
+                        selectedStudent = null;
+                        renderSections();
+                        return;
+                    }
+                    
+                    const sectionId = parseInt(btn.dataset.section);
+                    const studentId = parseInt(btn.dataset.student);
+                    
+                    const section = sections.find(s => s.id === sectionId);
+                    if (!section) return;
+                    
+                    const studentIndex = section.students.findIndex(s => s.id === studentId);
+                    if (studentIndex === -1) return;
+                    
+                    const student = section.students[studentIndex];
+                    selectedStudent = student;
+                    
+                    // Read current student
+                    readStudentAttendance(student, section.name);
+                    
+                    renderSections(); // Update highlighting
+                });
+            });
+            
+            // Toggle status menu
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const sectionId = parseInt(btn.dataset.section);
+                    const studentId = parseInt(btn.dataset.student);
+                    const week = btn.dataset.week;
+                    
+                    const menuId = `menu-${sectionId}-${studentId}-${week}`;
+                    const menu = document.getElementById(menuId);
+                    
+                    if (menu) {
+                        openStatusMenu(menu);
+                    }
+                });
+            });
+            
+            // Update attendance status
+            document.querySelectorAll('.status-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // Extract section, student, week from parent menu ID
+                    const menuId = option.parentElement.id;
+                    const [_, sectionId, studentId, week] = menuId.split('-');
+                    const status = option.dataset.status;
+                    
+                    sections = sections.map(section => {
+                        if (section.id === parseInt(sectionId)) {
+                            const updatedStudents = section.students.map(student => {
+                                if (student.id === parseInt(studentId)) {
+                                    const updatedAttendance = { ...student.attendance };
+                                    updatedAttendance[week] = status;
+                                    return { ...student, attendance: updatedAttendance };
+                                }
+                                return student;
+                            });
+                            return { ...section, students: updatedStudents };
+                        }
+                        return section;
+                    });
+                    
+                    closeStatusMenu();
+                    saveData();
+                    renderSections();
+                });
+            });
+            
+            // Delete student
+            document.querySelectorAll('tr .delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sectionId = parseInt(btn.dataset.section);
+                    const studentId = parseInt(btn.dataset.student);
+                    
+                    // Find student name for confirmation
+                    const section = sections.find(s => s.id === sectionId);
+                    if (!section) return;
+                    
+                    const student = section.students.find(s => s.id === studentId);
+                    if (!student) return;
+                    
+                    if (confirm(`Are you sure you want to delete ${student.name}?`)) {
+                        sections = sections.map(section => {
+                            if (section.id === sectionId) {
+                                const filteredStudents = section.students.filter(student => student.id !== studentId);
+                                return { ...section, students: filteredStudents };
+                            }
+                            return section;
+                        });
+                        
+                        saveData();
+                        renderSections();
+                    }
+                });
+            });
+        }
+
+        // Read student attendance
+        function readStudentAttendance(student, sectionName) {
+            isReading = true;
+            readingIndicator.style.display = 'block';
+            
+            // Show full attendance details including section name
+            let attendanceText = `${student.name} in ${sectionName}: `;
+            
+            // Format attendance for speech
+            const attendanceDetails = [];
+            for (let i = 1; i <= 4; i++) {
+                const weekKey = `week${i}`;
+                const status = student.attendance[weekKey];
+                const statusText = formatStatusForSpeech(status);
+                
+                attendanceDetails.push(`Week ${i}: ${statusText}`);
+            }
+            
+            attendanceText += attendanceDetails.join(', ');
+            
+            const utterance = new SpeechSynthesisUtterance(attendanceText);
+            
+            utterance.onend = () => {
+                isReading = false;
+                readingIndicator.style.display = 'none';
+                selectedStudent = null;
+                renderSections(); // Update to remove highlighting
+            };
+            
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            // Start speech after a small delay
+            setTimeout(() => {
+                window.speechSynthesis.speak(utterance);
+            }, 100);
+        }
+
+        // Initialize app
+        init();
+    </script>
+</body>
+</html>
